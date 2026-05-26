@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // --- Primitives & Safety Functions ---
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    // --- Default Deny ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Health Check ---
+    match /_health/{docId} {
+      allow read, write: if true; // Public health check for internal server verification
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.keys().hasAll(['id', 'fullName', 'email'])
+          && data.id == userId
+          && data.fullName is string && data.fullName.size() <= 100
+          && data.email is string && data.email.size() <= 100;
+      }
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidUser(incoming());
+    }
+
+    // --- Business Profiles ---
+    match /businessProfiles/{userId} {
+      function isValidProfile(data) {
+        return data.size() <= 50; // Simple size check for map
+      }
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidProfile(incoming());
+      allow delete: if isOwner(userId);
+    }
+
+    // --- Products ---
+    match /products/{productId} {
+      function isValidProduct(data) {
+        return data.keys().hasAll(['id', 'ownerId', 'name'])
+          && data.ownerId == request.auth.uid
+          && data.name is string && data.name.size() <= 200
+          && isValidId(productId);
+      }
+      
+      allow get, list: if isSignedIn() && (
+        !('ownerId' in existing()) || existing().ownerId == request.auth.uid
+      );
+      allow create: if isSignedIn() && isValidProduct(incoming());
+      allow update: if isSignedIn() && isValidProduct(incoming()) 
+        && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+    }
+
+    // --- Suppliers ---
+    match /suppliers/{supplierId} {
+      function isValidSupplier(data) {
+        return data.keys().hasAll(['id', 'ownerId', 'name'])
+          && data.ownerId == request.auth.uid
+          && data.name is string && data.name.size() <= 200
+          && isValidId(supplierId);
+      }
+      
+      allow get, list: if isSignedIn() && (
+        !('ownerId' in existing()) || existing().ownerId == request.auth.uid
+      );
+      allow create: if isSignedIn() && isValidSupplier(incoming());
+      allow update: if isSignedIn() && isValidSupplier(incoming())
+        && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+    }
+
+    // --- Chat History ---
+    match /chatHistory/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // --- Transactions ---
+    match /transactions/{transactionId} {
+      allow get, list: if isSignedIn() && existing().performedBy == request.auth.uid;
+      allow create: if isSignedIn() && incoming().performedBy == request.auth.uid;
+    }
+
+    // --- Insights Cache ---
+    match /insights_cache/{cacheKey} {
+      allow get: if isSignedIn();
+      allow create, update: if isSignedIn(); 
+    }
+
+    // --- Global App Config ---
+    match /appConfig/{configId} {
+      allow get: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

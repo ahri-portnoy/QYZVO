@@ -1,0 +1,101 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Basic user account information.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "phoneNumber": { "type": ["string", "null"] }
+      }
+    },
+    "Product": {
+      "title": "Inventory Product",
+      "description": "A single product in the inventory.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "sku": { "type": "string" },
+        "category": { "type": "string" },
+        "currentStock": { "type": "number" },
+        "minThreshold": { "type": "number" },
+        "unitPrice": { "type": "number" },
+        "supplierId": { "type": "string" },
+        "lastRestocked": { "type": "string", "format": "date-time" },
+        "burnRate": { "type": "number" },
+        "daysRemaining": { "type": "number" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["name", "sku", "currentStock"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "A supplier for inventory products.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "contactName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "leadTimeDays": { "type": "number" },
+        "categories": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "InventoryTransaction": {
+      "title": "Inventory Transaction",
+      "description": "A record of stock movement.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "type": { "type": "string", "enum": ["in", "out", "adjustment"] },
+        "quantity": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "reason": { "type": "string" },
+        "performedBy": { "type": "string" }
+      }
+    },
+    "InsightCache": {
+      "title": "Insight Cache",
+      "description": "Cached generated insights to save cost.",
+      "type": "object",
+      "properties": {
+        "insights": { "type": "array", "items": { "type": "object" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Active inventory products."
+    },
+    "/suppliers/{supplierId}": {
+      "schema": "Supplier",
+      "description": "Registered suppliers."
+    },
+    "/transactions/{transactionId}": {
+      "schema": "InventoryTransaction",
+      "description": "History of all inventory changes."
+    },
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "User profiles."
+    },
+    "/businessProfiles/{uid}": {
+      "schema": "BusinessProfile",
+      "description": "Strategic business DNA and profiles."
+    },
+    "/insights_cache/{cacheKey}": {
+      "schema": "InsightCache",
+      "description": "Global cache for expensive insights."
+    },
+    "/appConfig/pilot": {
+      "description": "Global AI Pilot training and instructions."
+    }
+  }
+}

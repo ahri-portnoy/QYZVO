@@ -1,0 +1,6 @@
+{
+  "name": "QYZVO Inventory Intelligence",
+  "description": "מערכת ניהול מלאי חכמה מבית QYZVO הכוללת טייס אוטומטי (Pilot) ניתן לאימון גלובלי, ניהול מוצרים, ספקים, התראות חסר ותובנות אסטרטגיות מבוססות AI.",
+  "requestFramePermissions": ["identity-credentials-get", "geolocation", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
